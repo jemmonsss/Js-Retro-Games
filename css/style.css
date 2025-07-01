@@ -1,0 +1,43 @@
+body {
+  background-color: #141414;
+  color: #fff;
+  font-family: Consolas, monospace;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+
+.menu {
+  margin-top: 80px;
+}
+
+.menu h1 {
+  font-size: 2em;
+  margin-bottom: 40px;
+}
+
+.menu ul {
+  list-style: none;
+  padding: 0;
+}
+
+.menu li {
+  margin: 20px 0;
+}
+
+.menu a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 1.5em;
+  transition: color 0.2s;
+}
+
+.menu a:hover {
+  color: #00cccc;
+}
+
+.credit {
+  margin-top: 100px;
+  font-size: 0.8em;
+  color: #777;
+}
