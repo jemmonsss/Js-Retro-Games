@@ -1,12 +1,161 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Snake 🐍</title>
-  <link rel="stylesheet" href="css/style.css" />
-</head>
-<body>
-  <canvas id="game" width="600" height="400"></canvas>
-  <script src="js/snake.js"></script>
-</body>
-</html>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+const CELL_SIZE = 20;
+const COLS = canvas.width / CELL_SIZE;
+const ROWS = canvas.height / CELL_SIZE;
+
+let snake, direction, food, running, paused, mode;
+let eatSound, gameOverSound;
+
+function initSounds() {
+    eatSound = new Audio("sounds/eat.wav");
+    gameOverSound = new Audio("sounds/game_over.wav");
+}
+
+function resetGame() {
+    snake = [{ x: 5, y: 5 }];
+    direction = { x: 1, y: 0 };
+    placeFood();
+    running = true;
+    paused = false;
+}
+
+function placeFood() {
+    do {
+        food = {
+            x: Math.floor(Math.random() * COLS),
+            y: Math.floor(Math.random() * ROWS)
+        };
+    } while (snake.some(segment => segment.x === food.x && segment.y === food.y));
+}
+
+function drawGrid() {
+    ctx.strokeStyle = "#1e1e1e";
+    for (let x = 0; x < canvas.width; x += CELL_SIZE) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+    }
+    for (let y = 0; y < canvas.height; y += CELL_SIZE) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+    }
+}
+
+function drawSnake() {
+    ctx.fillStyle = "#00ff00";
+    snake.forEach(segment => {
+        ctx.fillRect(segment.x * CELL_SIZE, segment.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        ctx.strokeStyle = "#0a280a";
+        ctx.strokeRect(segment.x * CELL_SIZE, segment.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    });
+}
+
+function drawFood() {
+    ctx.fillStyle = "#ff3232";
+    ctx.fillRect(food.x * CELL_SIZE, food.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+}
+
+function drawScore() {
+    ctx.fillStyle = "#00cccc";
+    ctx.font = "18px Consolas";
+    ctx.fillText(`Score: ${snake.length - 1}`, 10, 20);
+}
+
+function gameOver() {
+    gameOverSound.play();
+    running = false;
+    setTimeout(() => {
+        alert("Game Over! Refresh or press R to play again.");
+    }, 100);
+}
+
+function update() {
+    if (!running || paused) return;
+
+    const newHead = {
+        x: snake[0].x + direction.x,
+        y: snake[0].y + direction.y
+    };
+
+    if (mode === "Classic") {
+        if (
+            newHead.x < 0 || newHead.x >= COLS ||
+            newHead.y < 0 || newHead.y >= ROWS
+        ) {
+            gameOver();
+            return;
+        }
+    } else if (mode === "No Walls") {
+        newHead.x = (newHead.x + COLS) % COLS;
+        newHead.y = (newHead.y + ROWS) % ROWS;
+    }
+
+    if (snake.some(segment => segment.x === newHead.x && segment.y === newHead.y)) {
+        gameOver();
+        return;
+    }
+
+    snake.unshift(newHead);
+
+    if (newHead.x === food.x && newHead.y === food.y) {
+        eatSound.play();
+        placeFood();
+    } else {
+        snake.pop();
+    }
+}
+
+function draw() {
+    ctx.fillStyle = "#141414";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawGrid();
+    drawSnake();
+    drawFood();
+    drawScore();
+}
+
+function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+function chooseMode() {
+    let selected = 0;
+    const modes = ["Classic", "No Walls"];
+    while (true) {
+        const choice = prompt(`Choose Game Mode:\n0: Classic\n1: No Walls`, "0");
+        if (choice === null) return null;
+        const idx = parseInt(choice);
+        if (!isNaN(idx) && idx >= 0 && idx < modes.length) {
+            return modes[idx];
+        }
+    }
+}
+
+document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowUp" && direction.y !== 1) direction = { x: 0, y: -1 };
+    else if (e.key === "ArrowDown" && direction.y !== -1) direction = { x: 0, y: 1 };
+    else if (e.key === "ArrowLeft" && direction.x !== 1) direction = { x: -1, y: 0 };
+    else if (e.key === "ArrowRight" && direction.x !== -1) direction = { x: 1, y: 0 };
+    else if (e.key.toLowerCase() === "p") {
+        paused = !paused;
+        document.getElementById("overlay").classList.toggle("hidden", !paused);
+    }
+    else if (e.key.toLowerCase() === "r" && !running) {
+        mode = chooseMode();
+        if (mode) resetGame();
+    }
+});
+
+initSounds();
+mode = chooseMode();
+if (mode) {
+    resetGame();
+    loop();
+}
